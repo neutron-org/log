@@ -13,6 +13,7 @@ var logLevel = os.Getenv("LOG_LEVEL")
 // presented in the logger messages.
 func NewForContext(context string) (*zap.Logger, error) {
 	cfg := zap.NewProductionConfig()
+	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
 	cfg.Level = zap.NewAtomicLevelAt(parseLevel())
 	l, err := cfg.Build()
 	if err != nil {
