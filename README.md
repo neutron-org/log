@@ -20,13 +20,15 @@ Although the default cfg is made for logger instantiation and usage simplicity, 
 
 ## Examples
 
-### Lazy configuration
+### Lazy logger configuration
 
 ```go
 package main
 
+import nlogger "github.com/neutron-org/neutron-logger"
+
 func main() {
-	l, err := NewForContext("my_application")
+	l, err := nlogger.NewForContext("my_application")
 	if err != nil {
 		panic(err)
 	}
@@ -86,8 +88,10 @@ export LOGGER_CFG_PATH=cfg.json
 ```go
 package main
 
+import nlogger "github.com/neutron-org/neutron-logger"
+
 func main() {
-	l, err := NewForContext("my_application")
+	l, err := nlogger.NewForContext("my_application")
 	if err != nil {
 		panic(err)
 	}
@@ -102,4 +106,31 @@ results in:
 ```
 2022-09-27T08:55:35.379+0300    warm    {"context": "my_application"}
 2022-09-27T08:55:35.379+0300    error   {"context": "my_application"}
+```
+
+### Loggers registry
+
+If your application contains a lot of different contexts, it may be annoying to create a logger per each context manually with creation error handling. Loggers registry is meant to ease loggers creation and access.
+
+```go
+package main
+
+import nlogger "github.com/neutron-org/neutron-logger"
+
+func main() {
+    dbContext := "db"
+    apiContext := "api"
+	registry, err := nlogger.NewRegistry(dbContext, apiContext)
+	if err != nil {
+		panic(err)
+	}
+	registry.Get(dbContext).Info("db info message")
+	registry.Get(apiContext).Info("api info message")
+}
+```
+
+results in:
+```
+{"level":"info","ts":"2022-09-27T12:36:59.919689+03:00","msg":"db info message","context":"db"}
+{"level":"info","ts":"2022-09-27T12:36:59.919814+03:00","msg":"api info message","context":"api"}
 ```
