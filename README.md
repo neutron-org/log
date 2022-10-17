@@ -8,15 +8,18 @@ This repository contains a helper zap.Logger constructor that injects a mandator
 
 Basically, the logger is configured with the [zap.NewProductionLogger](https://github.com/uber-go/zap/blob/d6ce3b9b283401bc6cf975de6ac3e5ed5aec5341/config.go#L115) with modified logs timestamps as RFC3339-formatted string with nanosecond precision.
 
-For the default logger configuration the logging level is set using an env variable `LOGGER_LEVEL`. According to the [zap.Logger docs](https://github.com/uber-go/zap/blob/d6ce3b9b283401bc6cf975de6ac3e5ed5aec5341/level.go#L28), the expected `LOGGER_LEVEL` values are (the `dpanic`/`DPANIC` level is omitted, higher levels are more important):
+For the default logger configuration the logging level is set using an env variable `LOGGER_LEVEL`. According to the [zap.Logger docs](https://github.com/uber-go/zap/blob/d6ce3b9b283401bc6cf975de6ac3e5ed5aec5341/level.go#L28), the expected `LOGGER_LEVEL` values are (higher levels are more important):
 - `debug` or `DEBUG` — typically voluminous logs that are usually disabled in production;
 - `info` or `INFO` — the default logging priority;
 - `warn` or `WARN` — logs that are more important than Info, but don't need individual human review;
 - `error` or `ERROR` — high-priority logs. If an application is running smoothly, it shouldn't generate any error-level logs;
+- `dpanic` or `DPANIC` — logs a message, then panics. Works only if logger's development field set to true;
 - `panic` or `PANIC` — logs a message, then panics;
 - `fatal` or `FATAL` — logs a message, then calls os.Exit(1).
 
-Although the default cfg is made for logger instantiation and usage simplicity, a user can still configure the logger the way the [zap.Config](https://github.com/uber-go/zap/blob/d6ce3b9b283401bc6cf975de6ac3e5ed5aec5341/config.go#L45) allows it by assigning a path to a config file to the `LOGGER_CFG_PATH` env variable. Supported extensions for the config file are `.json`, `.yml` and `.yaml`. Configuration made by the config file overwrites the `LOGGER_LEVEL` and should contain comprehensive configuration (this is why the example file below is so detailed although it doesn't contain all the configurable fields).
+Although the default cfg is introduced for logger instantiation and usage simplicity, a user can still configure the logger the way the [zap.Config](https://github.com/uber-go/zap/blob/d6ce3b9b283401bc6cf975de6ac3e5ed5aec5341/config.go#L45) allows it via _setting_ env variables. If no value is set to an env variable, the production logger config value is used by default. See the [env configuration example](#configuration-via-env-variables) for details.
+
+Reminder: a _set_ env variable is a variable of any value stored in the system, even an empty one. So, e.g. `export LOGGER_ENCODERCONFIG_TIMEKEY=` will not apply a default value to the logger, but will result in the timestamp key absence. To set a default value, use `unset LOGGER_ENCODERCONFIG_TIMEKEY`. This is true for all config parameters.
 
 ## Examples
 
@@ -50,40 +53,16 @@ results in (stack trace and caller messages are removed for simplicity):
 {"level":"error","ts":"2022-09-27T09:00:19.78001+03:00","msg":"error","context":"my_application"}
 ```
 
-### Providing a cfg file
+### Configuration via env variables
 
-define a `cfg.json` (you can use the following as a boilerplate):
-```json
-{
-    "level": "warn",
-    "outputPaths": [
-        "stderr"
-    ],
-    "errorOutputPaths": [
-        "stderr"
-    ],
-    "encoding": "console",
-    "sampling": {
-        "initial": 100,
-        "thereafter": 100
-    },
-    "encoderConfig": {
-        "timeKey": "ts",
-        "levelKey": "level",
-        "nameKey": "logger",
-        "callerKey": "caller",
-        "messageKey": "msg",
-        "stacktraceKey": "stacktrace",
-        "lineEnding": "\n",
-        "timeEncoder": "ISO8601"
-    }
-}
-```
-
-make the config file available via `LOGGER_CFG_PATH` env variable
+configure all needed logger parameters by exporting corresponding env variables, e.g.:
 ```bash
-export LOGGER_CFG_PATH=cfg.json
+export LOGGER_LEVEL=warn
+export LOGGER_ENCODING=console
+export LOGGER_ENCODERCONFIG_ENCODETIME=ISO8601
 ```
+
+As you can see, just like LOGGER_LEVEL, all logger-related env variables are prefixed with `LOGGER_` and then writen solidly with `_` as structure level separator.
 
 ```go
 package main
